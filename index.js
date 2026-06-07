@@ -32,7 +32,11 @@ async function run() {
     const result= await petsCollection.findOne({_id:new ObjectId(id),});
     res.json(result)
   })
-
+  
+  app.get('/featured',async(req,res)=>{
+    const result= await petsCollection.find().limit(6).toArray();
+    res.json(result);
+  })
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
