@@ -33,6 +33,14 @@ async function run() {
     res.json(result)
   })
   
+  app.post("/pets",async(req,res)=>{
+    const petData=req.body;
+    petData.status='available';
+    const result= await petsCollection.insertOne(petData);
+    res.json(result);
+  })
+   
+
   app.get('/featured',async(req,res)=>{
     const result= await petsCollection.find().limit(6).toArray();
     res.json(result);
