@@ -24,10 +24,17 @@ async function run() {
     const requestCollection=db.collection("requestCollection")
     app.get('/pets', async(req,res)=>{
       let query = {};
-      const{email}=req.query;
+      const{email,search,species}=req.query;
+
       
       if(email){
         query.ownerEmail=email;
+      }
+      if(search){
+        query.petName={$regex:search,$options:'i'};
+      }
+      if(species){
+        query.species={$in : [species]};
       }
       const result= await petsCollection.find(query).toArray();
       res.json(result);
@@ -80,7 +87,7 @@ async function run() {
 
  app.patch('/request/approve/:id',async(req,res)=>{
   const {id}=req.params;
-
+  
   const result= await requestCollection.updateOne(
     {_id:new ObjectId(id)},
     { $set: {status: "approved"}}
@@ -90,6 +97,12 @@ async function run() {
     {_id: new ObjectId(id)},
     {$set:{status:'adopted'}}
    );
+   const request = await requestsCollection.findOne({ _id: new ObjectId(id) });
+
+   await requestCollection.updateMany(
+    {petId: request.petId, _id:{$ne: new ObjectId(id)}},
+    {$set:{status:'rejected'}}
+   )
    
    res.json(result);
 
