@@ -64,6 +64,14 @@ async function run() {
   app.post('/request',async(req,res)=>{
     const request=req.body;
 
+    const alreadyRequested= await requestCollection.findOne({
+      petId:request.petId,
+      requesterEmail:request.requesterEmail
+    })
+      if(alreadyRequested){
+        return res.status(400).json({message:"You already requested to adopt this pet"})
+      }  
+
     const result= await requestCollection.insertOne(request);
     res.json(result);
   })
@@ -109,6 +117,18 @@ async function run() {
     const result= await petsCollection.find().limit(6).toArray();
     res.json(result);
   })
+
+
+  app.get('/request', async(req,res)=>{
+      let query = {};
+      const{email}=req.query;
+      
+      if(email){
+        query.requesterEmail=email;
+      }
+      const result= await requestCollection.find(query).toArray();
+      res.json(result);
+    })
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
