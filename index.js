@@ -76,10 +76,7 @@ async function run() {
     res.json(result);
   })
 
-  app.get('/request', async (req,res)=>{
-    const result= await requestCollection.find().toArray();
-    res.json(result)
-  })
+  
 
  app.patch('/request/approve/:id',async(req,res)=>{
   const {id}=req.params;
@@ -129,6 +126,22 @@ async function run() {
       const result= await requestCollection.find(query).toArray();
       res.json(result);
     })
+
+    app.delete('/request/delete/:id',async(req,res)=>{
+      const{id}=req.params;
+      const result= await requestCollection.deleteOne({_id:new ObjectId(id)});
+      res.json(result);
+    })
+
+   app.patch('/pets/:id',async(req,res)=>{
+           const {id}=req.params;
+           const updatedData=req.body;
+           const result= await petsCollection.updateOne(
+             {_id: new ObjectId(id)},
+           {$set:{updatedData}}
+           )
+           res.json(result)
+   }) 
 
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
