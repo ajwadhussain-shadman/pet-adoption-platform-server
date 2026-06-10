@@ -3,6 +3,7 @@ const express = require('express');
 const cors=require('cors');
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config();
 
 const port =process.env.PORT ;
@@ -16,6 +17,31 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+ const JWKS = createRemoteJWKSet(
+  new URL('http://localhost:3000/api/auth/jwks')
+ )
+
+const verification= async(req,res,next)=>{
+  const authHeader=req?.headers.authorization;
+  if(!authHeader){
+    return res.status(401).json({message:"Unauthorized"})
+  }
+  const token=authHeader.split(" ")[1];
+  if(!token){
+    return res.status(401).json({message:"Unauthorized"})
+  }
+  
+  try{
+const {payload}= await jwtVerify(token,JWKS);
+console.log(payload)
+   next()
+  }
+  catch(error){
+    return res.status(403).json({message:"Forbidden"})
+  }
+ 
+}
+
 async function run() {
   try {
 
@@ -40,27 +66,27 @@ async function run() {
       res.json(result);
     })
   
-  app.get('/pets/:id', async (req,res)=>{
+  app.get('/pets/:id', verification, async (req,res)=>{
 
     const {id}= req.params;
     const result= await petsCollection.findOne({_id:new ObjectId(id),});
     res.json(result)
   })
   
-  app.post("/pets",async(req,res)=>{
+  app.post("/pets", verification, async(req,res)=>{
     const petData=req.body;
     petData.status='available';
     const result= await petsCollection.insertOne(petData);
     res.json(result);
   })
 
-  app.delete('/pets/:id',async(req,res)=>{
+  app.delete('/pets/:id',verification, async(req,res)=>{
     const {id}= req.params;
     const result= await petsCollection.deleteOne({_id:new ObjectId(id),});
     res.json(result);
   })
 
-  app.patch("/pets/:id",async(req,res)=>{
+  app.patch("/pets/:id",  verification, async(req,res)=>{
     const {id}=req.params;
     const updatedData=req.body;
     const result= await petsCollection.updateOne(
@@ -68,7 +94,7 @@ async function run() {
       {$set:updatedData},
     )
   })
-  app.post('/request',async(req,res)=>{
+  app.post('/request',verification, async(req,res)=>{
     const request=req.body;
 
     const alreadyRequested= await requestCollection.findOne({
@@ -116,7 +142,7 @@ async function run() {
   )
   res.json(result)
  })
- app.get('/request/pet/:petId',async(req,res)=>{
+ app.get('/request/pet/:petId',verification, async(req,res)=>{
   const {petId}=req.params.petId;
   const result= await requestCollection.find(petId).toArray()
   res.json(result)
@@ -129,7 +155,7 @@ async function run() {
   })
 
 
-  app.get('/request', async(req,res)=>{
+  app.get('/request', verification, async(req,res)=>{
       let query = {};
       const{email}=req.query;
       
@@ -140,7 +166,7 @@ async function run() {
       res.json(result);
     })
 
-    app.delete('/request/delete/:id',async(req,res)=>{
+    app.delete('/request/delete/:id',verification, async(req,res)=>{
       const{id}=req.params;
       const result= await requestCollection.deleteOne({_id:new ObjectId(id)});
       res.json(result);
