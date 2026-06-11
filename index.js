@@ -113,17 +113,18 @@ async function run() {
 
  app.patch('/request/approve/:id',async(req,res)=>{
   const {id}=req.params;
-  
+   const request = await requestCollection.findOne({ _id: new ObjectId(id) });
+
   const result= await requestCollection.updateOne(
     {_id:new ObjectId(id)},
     { $set: {status: "approved"}}
    );
     
    await petsCollection.updateOne(
-    {_id: new ObjectId(id)},
+    {_id: new ObjectId(request.petId)},
     {$set:{status:'adopted'}}
    );
-   const request = await requestsCollection.findOne({ _id: new ObjectId(id) });
+  
 
    await requestCollection.updateMany(
     {petId: request.petId, _id:{$ne: new ObjectId(id)}},
@@ -143,8 +144,8 @@ async function run() {
   res.json(result)
  })
  app.get('/request/pet/:petId',verification, async(req,res)=>{
-  const {petId}=req.params.petId;
-  const result= await requestCollection.find(petId).toArray()
+  const petId=req.params.petId;
+  const result= await requestCollection.find({petId:petId}).toArray()
   res.json(result)
  })
    
